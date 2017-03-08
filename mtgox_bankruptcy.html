@@ -4,12 +4,12 @@
 		<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
 <script>
 // Some variables from https://www.mtgox.com/img/pdf/20160928_report.pdf
-var mtgox_stamp = "2016-09-28"; // date at which this data is valid
-var mtgox_liabilities = 45609593503 + 34884662 + 73627794; // 34M JPY claim rejection retracted, 73M JPY preferred bankruptcy claims
-var mtgox_liabilities_assessment = 2220868159; // petitions for assessment 2.2BN JPY
+var mtgox_stamp = "2017-03-08"; // date at which this data is valid
+var mtgox_liabilities = 45609593503 + 34884662 + 126630380 + 73627794; // 34M JPY claim rejection retracted, 126M JPY retracted march 2017, 73M JPY preferred bankruptcy claims
+var mtgox_liabilities_assessment = 2223322737; // petitions for assessment 2.2BN JPY
 var mtgox_liabilities_coinlab = 8775375000; // rough estimate based on 75mil USD converted to JPY
 var mtgox_bitcoins = 202185.35450043; // bitcoins held by MtGox
-var mtgox_assets = 1054483013; // current balance
+var mtgox_assets = 1030895045; // current balance
 // what the bitcoin price needs to be for assets to be over liabilities
 // take total liabilities, deduct current JPY assets, divide by bitcoin assets
 var mtgox_ideal_bitcoin_price_min = (mtgox_liabilities - mtgox_assets) / mtgox_bitcoins;
