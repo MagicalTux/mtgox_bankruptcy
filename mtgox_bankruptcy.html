@@ -1,0 +1,124 @@
+<html>
+	<head>
+		<title>MtGox Bankruptcy - Bitcoin valuation estimate</title>
+		<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+<script>
+// Some variables from https://www.mtgox.com/img/pdf/20160928_report.pdf
+var mtgox_stamp = "2016-09-28"; // date at which this data is valid
+var mtgox_liabilities = 45609593503 + 34884662 + 73627794; // 34M JPY claim rejection retracted, 73M JPY preferred bankruptcy claims
+var mtgox_liabilities_assessment = 2220868159; // petitions for assessment 2.2BN JPY
+var mtgox_liabilities_coinlab = 8775375000; // rough estimate based on 75mil USD converted to JPY
+var mtgox_bitcoins = 202185.35450043; // bitcoins held by MtGox
+var mtgox_assets = 1054483013; // current balance
+// what the bitcoin price needs to be for assets to be over liabilities
+// take total liabilities, deduct current JPY assets, divide by bitcoin assets
+var mtgox_ideal_bitcoin_price_min = (mtgox_liabilities - mtgox_assets) / mtgox_bitcoins;
+var mtgox_ideal_bitcoin_price_max = (mtgox_liabilities - mtgox_assets + mtgox_liabilities_assessment + mtgox_liabilities_coinlab) / mtgox_bitcoins;
+// bitcoin price
+var bitcoin_price = "Please click one of the buttons up there to get the current bitcoin price";
+var bitcoin_price_source = "";
+var bitcoin_price_source_url = "http://www.google.com/";
+// computed stuff
+var mtgox_assets_computed = 0;
+var mtgox_rate_min = "?";
+var mtgox_rate_max = "?";
+var mtgox_worst_rate_min = "?";
+var mtgox_worst_rate_max = "?";
+// list of all vars
+var replace_vars = [
+	'mtgox_stamp', 'mtgox_liabilities', 'mtgox_liabilities_assessment', 'mtgox_liabilities_coinlab', 'mtgox_bitcoins', 'mtgox_assets',
+	'mtgox_ideal_bitcoin_price_min', 'mtgox_ideal_bitcoin_price_max',
+	'bitcoin_price', 'bitcoin_price_source', 'bitcoin_price_source_url',
+	'mtgox_assets_computed', 'mtgox_rate_min', 'mtgox_rate_max', 'mtgox_worst_rate_min', 'mtgox_worst_rate_max'
+];
+
+// found on http://stackoverflow.com/questions/7327046/jquery-number-formatting
+function dirty_format(nStr) {
+	nStr += ''; // force as string
+	x = nStr.split('.');
+	x1 = x[0];
+	x2 = x.length > 1 ? '.' + x[1] : '';
+	var rgx = /(\d+)(\d{3})/;
+	while (rgx.test(x1)) {
+		x1 = x1.replace(rgx, '$1' + ',' + '$2');
+	}
+	return x1 + x2;
+}
+
+function format_pc(val) {
+	// format percentage
+	if (val >= 1) return "100%";
+	return (Math.round(val * 10000) / 100) + "%";
+}
+
+function update_display() {
+	mtgox_assets_computed = mtgox_assets + (mtgox_bitcoins * bitcoin_price);
+	mtgox_rate_min = format_pc(mtgox_assets_computed / (mtgox_liabilities + mtgox_liabilities_assessment + mtgox_liabilities_coinlab));
+	mtgox_rate_max = format_pc(mtgox_assets_computed / mtgox_liabilities);
+
+	mtgox_worst_rate_min = format_pc(((mtgox_bitcoins * 0.1 * bitcoin_price) + mtgox_assets) / (mtgox_liabilities + mtgox_liabilities_assessment + mtgox_liabilities_coinlab));
+	mtgox_worst_rate_max = format_pc(((mtgox_bitcoins * 0.1 * bitcoin_price) + mtgox_assets) / mtgox_liabilities);
+	$('a[name="bitcoin_price_source"]').attr('href', bitcoin_price_source_url);
+
+	// will this work in most browsers??
+	$.each(replace_vars, function(index, value) {
+		var v = window[value];
+		if (typeof v != "string") { // not a string => int or float
+			v = dirty_format(v);
+		}
+		$('[name="'+value+'"]').text(v);
+	});
+}
+
+function update_coindesk() {
+	$.ajax({
+		url: "http://api.coindesk.com/v1/bpi/currentprice/JPY.json",
+		success: function(result) {
+			if (typeof result == "string") {
+				result = JSON.parse(result); // coindesk api is not returning correct content-type
+			}
+			console.log(result);
+			bitcoin_price = result.bpi.JPY.rate_float;
+			bitcoin_price_source = "Powered by CoinDesk.\n" + result.disclaimer;
+			bitcoin_price_source_url = "http://www.coindesk.com/price/";
+			update_display();
+		}
+	});
+}
+
+function update_blockchain() {
+	$.ajax({
+		url: "https://blockchain.info/ticker?cors=true",
+		success: function(result) {
+			bitcoin_price = result.JPY.last; // use 15m ?
+			bitcoin_price_source = "Powered by Blockchain.info.";
+			bitcoin_price_source_url = "https://www.blockchain.info/";
+			update_display();
+		}
+	});
+}
+</script>
+<style>
+.svalue {
+	font-weight: bold;
+}
+</style>
+	</head>
+	<body>
+		<h1>MtGox Claims status</h1>
+		<p>Due to volatility in Bitcoin price, this page is made to collect Bitcoin price online and compute the repayment rate based on some expectations.</p>
+		<p><b>All values here are based on currently available information and do not include any future costs such as lawsuits/etc the bankruptcy estate may have to bear. Also, this is nothing more than expectations, and could be completely wrong. Do not base any decision on the numbers shown here!! The author declines all responsibility, etc etc. Please, PLEASE be responsible and get advice from professionals if you need.</b></p>
+		<p>You can update the Bitcoin price from the following sources: <button type="button" onclick="update_coindesk()">CoinDesk</button> <button type="button" onclick="update_blockchain()">Blockchain.info</button></p>
+		<h2>Bankruptcy status</h2>
+		<p>The current price of 1 Bitcoin is <span name="bitcoin_price" class="svalue"></span> JPY. <a href="" name="bitcoin_price_source" target="_blank"></a></p>
+		<p>As of <span name="mtgox_stamp"></span>, the bankruptcy estate is holding <span name="mtgox_bitcoins" class="svalue"></span> Bitcoins and <span name="mtgox_assets" class="svalue"></span> JPY, which makes a total of <span name="mtgox_assets_computed" class="svalue"></span> JPY at current rate.<br>
+		The bankruptcy liabilities includes a total of <span name="mtgox_liabilities" class="svalue"></span> JPY confirmed, plus some <span name="mtgox_liabilities_assessment" class="svalue"></span> JPY currently pending assessment and <span name="mtgox_liabilities_coinlab" class="svalue"></span> in the CoinLab lawsuit.</p>
+		<p><b>IF</b> Bitcoins are valued at the current rate, the expected repayment rate is <span name="mtgox_rate_min" class="svalue"></span>~<span name="mtgox_rate_max" class="svalue"></span></p>
+		<p><b>IF</b> Bitcoins are valued at 10% of their current value, the expected repayment rate is <span name="mtgox_worst_rate_min" class="svalue"></span>~<span name="mtgox_worst_rate_max" class="svalue"></span></p>
+		<p>Note that if the Bitcoin price reaches <span name="mtgox_ideal_bitcoin_price_max" class="svalue"></span> JPY (or at least <span name="mtgox_ideal_bitcoin_price_min" class="svalue"></span> JPY if excluding CoinLab and pending liabilities) assets will have more value than liabilities.</p>
+
+<script>
+update_display();
+</script>
+	</body>
+</html>
