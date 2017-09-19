@@ -72,7 +72,7 @@ function update_display() {
 
 function update_coindesk() {
 	$.ajax({
-		url: "http://api.coindesk.com/v1/bpi/currentprice/JPY.json",
+		url: "https://api.coindesk.com/v1/bpi/currentprice/JPY.json",
 		success: function(result) {
 			if (typeof result == "string") {
 				result = JSON.parse(result); // coindesk api is not returning correct content-type
